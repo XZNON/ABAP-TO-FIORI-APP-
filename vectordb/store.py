@@ -67,6 +67,7 @@ class FioriVectorStore:
                         "app_id": app.get("app_id", ""),
                         "title": app.get("title", ""),
                         "description": app.get("description", "")[:500],
+                        "business_role" : app.get("business_role",""),
                         "app_type": app.get("app_type", ""),
                         "product": app.get("product", ""),
                     }

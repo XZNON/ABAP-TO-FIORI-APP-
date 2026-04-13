@@ -5,7 +5,8 @@ import os
 
 from vectordb.store import FioriVectorStore
 from rag.analyzer import SAPRAGAnalyzer
-from crawler.fiori_crawler import FioriCrawler
+from helpers.firoi_dataset import FioriDatasetManager
+from helpers.process_fiori import process_fiori_excel
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -70,6 +71,10 @@ class RAGApp:
 
         self.log("Analyzing...")
 
+        if not self.vector_store.index_exists():
+            self.log("No DB found. Building automatically...")
+            self._reset_db()
+            
         analyzer = SAPRAGAnalyzer(vector_store=self.vector_store,groq_api_key=groq_api_key)
 
         results = analyzer.analyze(abap_code)
@@ -85,15 +90,25 @@ class RAGApp:
         self.log("\n=== RECOMMENDATION ===\n")
         self.log(results["recommendation"])
 
-    def reset_db(self):
-        self.log("Rebuilding DB...")
+    def _reset_db(self):
+        self.log("🔄 Rebuilding DB...")
 
-        crawler = FioriCrawler()
-        apps = crawler.crawl()
+        dataset = FioriDatasetManager()
 
+        # Step 1: Download dataset
+        self.log("Downloading dataset...")
+        dataset.refresh_dataset()
+
+        # Step 2: Process dataset
+        self.log("Processing dataset...")
+        apps = process_fiori_excel(dataset.download_path)
+        self.log(f"Processed {len(apps)} apps")
+
+        # Step 3: Build vector DB
+        self.log("Building vector DB...")
         self.vector_store.build(apps)
 
-        self.log("DB rebuilt successfully!")
+        self.log("✅ DB rebuilt successfully!")
 
 if __name__ == "__main__":
     root = tk.Tk()

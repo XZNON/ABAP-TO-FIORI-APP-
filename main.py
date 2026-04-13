@@ -13,6 +13,8 @@ import os
 from crawler.fiori_crawler import FioriCrawler
 from vectordb.store import FioriVectorStore
 from rag.analyzer import SAPRAGAnalyzer
+from helpers.firoi_dataset import FioriDatasetManager
+from helpers.process_fiori import process_fiori_excel
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -42,11 +44,15 @@ def main():
     print(f"{'='*60}\n")
 
     vector_store = FioriVectorStore(groq_api_key = groq_api_key)
+    dataset = FioriDatasetManager()
 
     if args.build_index or not vector_store.index_exists():
         print("[1/3] Crawling SAP Fiori Apps Library...")
-        crawler = FioriCrawler()
-        apps = crawler.crawl()
+        dataset.ensure_dataset()
+
+        apps = process_fiori_excel(dataset.download_path)
+        print(f"Processed {len(apps)} apps")
+
         print(f"Fetched {len(apps)} apps. Building vector index...")
         vector_store.build(apps)
         print("Index built and persisted.\n")
