@@ -13,7 +13,7 @@ app using Retrieval-Augmented Generation.
 ABAP file
    │
    ▼
-[Chain 1 — Gro1]          Parse code → plain-language functional summary
+[Chain 1 — Groq]          Parse code → plain-language functional summary
    │
    ▼
 [ChromaDB similarity]     Embed summary → cosine search over ~3,500 Fiori apps
