@@ -6,12 +6,9 @@ Embeddings are generated via LangChain's HuggingFaceEmbeddings
 for embeddings, keeping costs zero.
 """
 
-import json
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-import os
 
-import torch
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
@@ -27,19 +24,23 @@ class FioriVectorStore:
     def __init__(self,groq_api_key):
         self.groq_api_key = groq_api_key
         self._db : Optional[Chroma] = None
-        self._embeddings = self._make_embeddings()
+        self._embeddings = None
     
-    def _make_embeddings(self):
+    def _get_embeddings(self):
         """
-        Using sentence transformer embeddings, can use openAI embeddigns 
+        Load sentence-transformers only when first needed.
         """
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        return HuggingFaceEmbeddings(
-            model_name = "sentence-transformers/all-MiniLM-L6-v2",
-            model_kwargs = {"device" : device},
-            encode_kwargs = {"normalize_embeddings": True},
-        )
-
+        if self._embeddings is None:
+            print("Loading embedding model (sentence-transformers)...")
+            print("...please wait...")
+            self._embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-MiniLM-L6-v2",
+                model_kwargs={"device": "cpu"},
+                encode_kwargs={"normalize_embeddings": True},
+            )
+            print("Embedding model ready.")
+        return self._embeddings
+    
     def index_exists(self) -> bool:
         persist_path = Path(PERSIST_DIR)
         return persist_path.exists() and any(persist_path.iterdir())
@@ -76,7 +77,7 @@ class FioriVectorStore:
         
         self._db = Chroma.from_documents(
             documents=docs,
-            embedding=self._embeddings,
+            embedding=self._get_embeddings(),
             collection_name=COLLECTION_NAME,
             persist_directory=PERSIST_DIR
         )
@@ -85,7 +86,7 @@ class FioriVectorStore:
     def load(self) -> None:
         self._db = Chroma(
             collection_name=COLLECTION_NAME,
-            embedding_function=self._embeddings,
+            embedding_function=self._get_embeddings(),
             persist_directory=PERSIST_DIR,
         )
     
